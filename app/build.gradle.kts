@@ -48,7 +48,7 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,6 +64,8 @@ android {
         register("core")
         register("foss")
         register("prepaid")
+        register("rom")
+        register("mo")
     }
 
     sourceSets {
