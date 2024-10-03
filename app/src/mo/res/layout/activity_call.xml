@@ -206,6 +206,7 @@
             android:contentDescription="@string/turn_microphone_off"
             android:padding="@dimen/activity_margin"
             android:src="@drawable/ic_microphone_off_vector"
+            android:visibility="invisible"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintHeight_max="@dimen/call_control_button_size" />
 
@@ -217,6 +218,7 @@
             android:contentDescription="@string/turn_speaker_on"
             android:padding="@dimen/activity_margin"
             android:src="@drawable/ic_volume_up_vector"
+            android:visibility="invisible"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintHeight_max="@dimen/call_control_button_size" />
 
@@ -239,6 +241,7 @@
             android:contentDescription="@string/hold_call"
             android:padding="@dimen/activity_margin"
             android:src="@drawable/ic_pause_vector"
+            android:visibility="invisible"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintHeight_max="@dimen/call_control_button_size" />
 
@@ -250,6 +253,7 @@
             android:contentDescription="@string/call_add"
             android:padding="@dimen/activity_margin"
             android:src="@drawable/ic_add_call_vector"
+            android:visibility="invisible"
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintHeight_max="@dimen/call_control_button_size" />
 
@@ -263,7 +267,8 @@
             android:src="@drawable/ic_people_vector"
             android:visibility="invisible"
             app:layout_constraintDimensionRatio="1:1"
-            app:layout_constraintHeight_max="@dimen/call_control_button_size" />
+            app:layout_constraintHeight_max="@dimen/call_control_button_size"
+            tools:visibility="invisible" />
 
         <ImageView
             android:id="@+id/call_swap"
