@@ -7,7 +7,7 @@
 /build
 /captures
 keystore.jks
-keystore.properties
+# keystore.properties
 fastlane/fastlane.json
 Gemfile
 Gemfile.lock
