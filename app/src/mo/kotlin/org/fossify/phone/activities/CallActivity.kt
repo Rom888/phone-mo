@@ -155,17 +155,6 @@ class CallActivity : SimpleActivity() {
             hideDialpad()
         }
 
-        callToggleHold.setOnClickListener {
-            toggleHold()
-        }
-
-        callAdd.setOnClickListener {
-            Intent(applicationContext, DialpadActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-                startActivity(this)
-            }
-        }
-
         callSwap.setOnClickListener {
             CallManager.swap()
         }
@@ -234,7 +223,7 @@ class CallActivity : SimpleActivity() {
         val inactiveColor = getInactiveButtonColor()
         arrayOf(
             callToggleMicrophone, callToggleSpeaker, callDialpad,
-            callToggleHold, callAdd, callSwap, callMerge, callManage
+            callSwap, callMerge, callManage
         ).forEach {
             it.applyColorFilter(bgColor.getContrastColor())
             it.background.applyColorFilter(inactiveColor)
@@ -242,7 +231,7 @@ class CallActivity : SimpleActivity() {
 
         arrayOf(
             callToggleMicrophone, callToggleSpeaker, callDialpad,
-            callToggleHold, callAdd, callSwap, callMerge, callManage
+            callSwap, callMerge, callManage
         ).forEach { imageView ->
             imageView.setOnLongClickListener {
                 if (!imageView.contentDescription.isNullOrEmpty()) {
@@ -558,13 +547,6 @@ class CallActivity : SimpleActivity() {
         }
     }
 
-    private fun toggleHold() {
-        val isOnHold = CallManager.toggleHold()
-        toggleButtonColor(binding.callToggleHold, isOnHold)
-        binding.callToggleHold.contentDescription = getString(if (isOnHold) R.string.resume_call else R.string.hold_call)
-        binding.holdStatusLabel.beInvisibleIf(!isOnHold)
-    }
-
     private fun updateOtherPersonsInfo(avatarUri: String?) {
         if (callContact == null) {
             return
@@ -676,8 +658,6 @@ class CallActivity : SimpleActivity() {
             val state = phoneState.call.getStateCompat()
             val isSingleCallActionsEnabled = !isCallEnded && (state == Call.STATE_ACTIVE || state == Call.STATE_DISCONNECTED
                 || state == Call.STATE_DISCONNECTING || state == Call.STATE_HOLDING)
-            setActionButtonEnabled(binding.callToggleHold, isSingleCallActionsEnabled)
-            setActionButtonEnabled(binding.callAdd, isSingleCallActionsEnabled)
         } else if (phoneState is TwoCalls) {
             updateCallState(phoneState.active)
             updateCallOnHoldState(phoneState.onHold)
