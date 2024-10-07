@@ -6,6 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
@@ -13,6 +17,8 @@ import android.os.Looper
 import android.os.PowerManager
 import android.telecom.Call
 import android.telecom.CallAudioState
+import android.util.Log
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
@@ -39,7 +45,8 @@ import org.fossify.phone.models.CallContact
 import kotlin.math.max
 import kotlin.math.min
 
-class CallActivity : SimpleActivity() {
+
+class CallActivity : SimpleActivity(), SensorEventListener {
     companion object {
         fun getStartIntent(context: Context): Intent {
             val openAppIntent = Intent(context, CallActivity::class.java)
@@ -62,6 +69,9 @@ class CallActivity : SimpleActivity() {
     private var stopAnimation = false
     private var viewsUnderDialpad = arrayListOf<Pair<View, Float>>()
     private var dialpadHeight = 0f
+    private lateinit var sensorManager: SensorManager
+    private var proximitySensor: Sensor? = null
+    private var callWasAccepted = false
 
     private var audioRouteChooserDialog: DynamicBottomSheetChooserDialog? = null
 
@@ -73,6 +83,24 @@ class CallActivity : SimpleActivity() {
             finish()
             return
         }
+
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
+        proximitySensor?.let { sensor ->
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+
+        //Set volume for in-call audio
+        audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL), AudioManager.FLAG_SHOW_UI)
+
+        //Set volume for incoming calls
+        audioManager.setStreamVolume(
+            AudioManager.STREAM_RING,
+            audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+        )
+
 
         updateTextColors(binding.callHolder)
         initButtons()
@@ -107,6 +135,36 @@ class CallActivity : SimpleActivity() {
         }
     }
 
+
+
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event != null) {
+            if (event.keyCode != KeyEvent.KEYCODE_VOLUME_UP && event.keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
+                //Set volume for incoming calls (just in case)
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_RING,
+                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+                )
+                return super.dispatchKeyEvent(event)
+            }
+        }
+        return true
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (event != null) {
+            if (event.keyCode != KeyEvent.KEYCODE_VOLUME_UP && event.keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
+                // Set volume for incoming calls (just in case)
+                audioManager.setStreamVolume(
+                    AudioManager.STREAM_RING,
+                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+                )
+                return super.onKeyDown(keyCode, event)
+            }
+        }
+        return true
+    }
+
     override fun onBackPressed() {
         if (binding.dialpadWrapper.isVisible()) {
             hideDialpad()
@@ -128,13 +186,10 @@ class CallActivity : SimpleActivity() {
             callLeftArrow.beGone()
             callRightArrow.beGone()
 
-            callDecline.setOnClickListener {
-                endCall()
-            }
-
-            callAccept.setOnClickListener {
-                acceptCall()
-            }
+            callDecline.beGone()
+            callAccept.beGone()
+            callAcceptLabel.beGone()
+            callDeclineLabel.beGone()
         } else {
             handleSwipe()
         }
@@ -715,7 +770,7 @@ class CallActivity : SimpleActivity() {
         enableProximitySensor()
         binding.incomingCallHolder.beGone()
         binding.ongoingCallHolder.beVisible()
-        binding.callEnd.beVisible()
+        binding.callEnd.beGone()
         callDurationHandler.removeCallbacks(updateCallDurationTask)
         callDurationHandler.post(updateCallDurationTask)
     }
@@ -856,5 +911,20 @@ class CallActivity : SimpleActivity() {
             view.background.applyColorFilter(getInactiveButtonColor())
             view.applyColorFilter(getProperBackgroundColor().getContrastColor())
         }
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        val distanceInCentimeters = event?.values?.get(0)
+        if (distanceInCentimeters != null) {
+            if (distanceInCentimeters < 5 && !callWasAccepted) {
+                CallManager.accept()
+                callWasAccepted = true
+                sensorManager.unregisterListener(this)
+            }
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // No operations
     }
 }

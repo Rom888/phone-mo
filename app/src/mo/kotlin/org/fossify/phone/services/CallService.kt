@@ -35,18 +35,7 @@ class CallService : InCallService() {
         CallManager.inCallService = this
         call.registerCallback(callListener)
 
-        val isScreenLocked = (getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isDeviceLocked
-        if (!powerManager.isInteractive || call.isOutgoing() || isScreenLocked || config.alwaysShowFullscreen) {
-            try {
-                callNotificationManager.setupNotification(true)
-                startActivity(CallActivity.getStartIntent(this))
-            } catch (e: Exception) {
-                // seems like startActivity can throw AndroidRuntimeException and ActivityNotFoundException, not yet sure when and why, lets show a notification
-                callNotificationManager.setupNotification()
-            }
-        } else {
-            callNotificationManager.setupNotification()
-        }
+        startActivity(CallActivity.getStartIntent(this))
     }
 
     override fun onCallRemoved(call: Call) {
