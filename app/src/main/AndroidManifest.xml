@@ -35,6 +35,10 @@
         <package android:name="org.fossify.contacts" />
     </queries>
 
+    <!-- Allows access to the flashlight -->
+    <uses-permission android:name="android.permission.FLASHLIGHT"
+        />
+
     <application
         android:name="org.fossify.phone.App"
         android:allowBackup="true"

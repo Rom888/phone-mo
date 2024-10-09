@@ -150,7 +150,7 @@ class SettingsActivity : SimpleActivity() {
             settingsManageBlockedNumbersLabel.text = addLockedLabelIfNeeded(R.string.manage_blocked_numbers)
             settingsManageBlockedNumbersHolder.beVisibleIf(isNougatPlus())
             settingsManageBlockedNumbersHolder.setOnClickListener {
-                if (isOrWasThankYouInstalled()) {
+                if (true) {
                     Intent(this@SettingsActivity, ManageBlockedNumbersActivity::class.java).apply {
                         startActivity(this)
                     }

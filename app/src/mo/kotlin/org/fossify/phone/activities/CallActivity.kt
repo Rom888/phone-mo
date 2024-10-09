@@ -10,6 +10,8 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
@@ -17,7 +19,6 @@ import android.os.Looper
 import android.os.PowerManager
 import android.telecom.Call
 import android.telecom.CallAudioState
-import android.util.Log
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -72,6 +73,46 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var proximitySensor: Sensor? = null
     private var callWasAccepted = false
+    private lateinit var cameraManager: CameraManager
+
+    private lateinit var cameraId: String
+    private val handler = Handler()
+    private var isFlashOn = false
+    private var isScreenOff = false
+    private var prevBrightness: Float = 0.5f
+
+    private val repeatedCallAction = object : Runnable {
+        override fun run() {
+            try {
+                if (cameraId.isNotEmpty()) {
+                    if (isFlashOn) {
+                        cameraManager.setTorchMode(cameraId, false) // Turn off
+                    } else {
+                        cameraManager.setTorchMode(cameraId, true)  // Turn on
+                    }
+
+                    isFlashOn = !isFlashOn
+
+                    // Continue the loop in 1 second
+                    handler.postDelayed(this, 1000)
+                }
+
+            } catch (e: CameraAccessException) {
+                e.printStackTrace()
+            }
+
+            if (isScreenOff) {
+                val param = window.attributes
+                param.screenBrightness = 1f
+                window.attributes = param
+            } else {
+                val param = window.attributes
+                param.screenBrightness = 0f
+                window.attributes = param
+            }
+            isScreenOff = !isScreenOff
+        }
+    }
 
     private var audioRouteChooserDialog: DynamicBottomSheetChooserDialog? = null
 
@@ -93,14 +134,20 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
 
         //Set volume for in-call audio
-        audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL), AudioManager.FLAG_SHOW_UI)
+        audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL), 0)
 
         //Set volume for incoming calls
         audioManager.setStreamVolume(
             AudioManager.STREAM_RING,
-            audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+            audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0
         )
 
+        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        cameraId = cameraManager.cameraIdList[0]
+
+        handler.post(repeatedCallAction)
+
+        prevBrightness = window.attributes.screenBrightness
 
         updateTextColors(binding.callHolder)
         initButtons()
@@ -129,12 +176,17 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         super.onDestroy()
         CallManager.removeListener(callCallback)
         disableProximitySensor()
+        handler.removeCallbacks(repeatedCallAction)
+        sensorManager.unregisterListener(this)
+        val param = window.attributes
+        param.screenBrightness = prevBrightness
+        window.attributes = param
+        cameraManager.setTorchMode(cameraId, false)
 
         if (screenOnWakeLock?.isHeld == true) {
             screenOnWakeLock!!.release()
         }
     }
-
 
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
@@ -752,6 +804,12 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     }
 
     private fun acceptCall() {
+        callWasAccepted = true
+        sensorManager.unregisterListener(this)
+        val param = window.attributes
+        param.screenBrightness = prevBrightness
+        window.attributes = param
+        handler.removeCallbacks(repeatedCallAction)
         CallManager.accept()
     }
 
@@ -870,11 +928,11 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     }
 
     private fun enableProximitySensor() {
-        if (!config.disableProximitySensor && (proximityWakeLock == null || proximityWakeLock?.isHeld == false)) {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-            proximityWakeLock = powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "org.fossify.phone:wake_lock")
-            proximityWakeLock!!.acquire(60 * MINUTE_SECONDS * 1000L)
-        }
+//        if (!config.disableProximitySensor && (proximityWakeLock == null || proximityWakeLock?.isHeld == false)) {
+//            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+//            proximityWakeLock = powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "org.fossify.phone:wake_lock")
+//            proximityWakeLock!!.acquire(60 * MINUTE_SECONDS * 1000L)
+//        }
     }
 
     private fun disableProximitySensor() {
@@ -917,9 +975,7 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         val distanceInCentimeters = event?.values?.get(0)
         if (distanceInCentimeters != null) {
             if (distanceInCentimeters < 5 && !callWasAccepted) {
-                CallManager.accept()
-                callWasAccepted = true
-                sensorManager.unregisterListener(this)
+                acceptCall()
             }
         }
     }
