@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.hardware.Sensor
@@ -78,8 +79,10 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     private lateinit var cameraId: String
     private val handler = Handler()
     private var isFlashOn = false
+    private var flashCounter = 0
     private var isScreenOff = false
     private var prevBrightness: Float = 0.5f
+    private var firstRinging = true
 
     private val repeatedCallAction = object : Runnable {
         override fun run() {
@@ -87,30 +90,26 @@ class CallActivity : SimpleActivity(), SensorEventListener {
                 if (cameraId.isNotEmpty()) {
                     if (isFlashOn) {
                         cameraManager.setTorchMode(cameraId, false) // Turn off
-                    } else {
+                    } else if (flashCounter % 10 == 0) {
                         cameraManager.setTorchMode(cameraId, true)  // Turn on
                     }
+                    flashCounter++
 
                     isFlashOn = !isFlashOn
 
                     // Continue the loop in 1 second
-                    handler.postDelayed(this, 1000)
+                    handler.postDelayed(this, 100)
                 }
 
             } catch (e: CameraAccessException) {
                 e.printStackTrace()
             }
 
-            if (isScreenOff) {
-                val param = window.attributes
-                param.screenBrightness = 1f
-                window.attributes = param
-            } else {
-                val param = window.attributes
-                param.screenBrightness = 0f
-                window.attributes = param
+            if (flashCounter % 10 == 0) {
+                binding.root.setBackgroundColor(if (isScreenOff) Color.WHITE else Color.BLACK)
+                isScreenOff = !isScreenOff
             }
-            isScreenOff = !isScreenOff
+
         }
     }
 
@@ -144,8 +143,6 @@ class CallActivity : SimpleActivity(), SensorEventListener {
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         cameraId = cameraManager.cameraIdList[0]
-
-        handler.post(repeatedCallAction)
 
         prevBrightness = window.attributes.screenBrightness
 
@@ -231,6 +228,7 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun initButtons() = binding.apply {
         if (config.disableSwipeToAnswer) {
             callDraggable.beGone()
@@ -810,6 +808,7 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         param.screenBrightness = prevBrightness
         window.attributes = param
         handler.removeCallbacks(repeatedCallAction)
+        binding.root.setBackgroundColor(Color.WHITE)
         CallManager.accept()
     }
 
@@ -817,10 +816,14 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         enableProximitySensor()
         binding.incomingCallHolder.beGone()
         binding.ongoingCallHolder.beVisible()
-        binding.callEnd.beVisible()
+//        binding.callEnd.beVisible()
     }
 
     private fun callRinging() {
+        if (firstRinging) {
+            handler.post(repeatedCallAction)
+            firstRinging = false
+        }
         binding.incomingCallHolder.beVisible()
     }
 
