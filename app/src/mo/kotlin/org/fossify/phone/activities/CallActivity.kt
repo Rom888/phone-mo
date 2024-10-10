@@ -88,11 +88,11 @@ class CallActivity : SimpleActivity(), SensorEventListener {
         override fun run() {
             try {
                 if (cameraId.isNotEmpty()) {
-                    if (isFlashOn) {
-                        cameraManager.setTorchMode(cameraId, false) // Turn off
-                    } else if (flashCounter % 10 == 0) {
-                        cameraManager.setTorchMode(cameraId, true)  // Turn on
-                    }
+//                    if (isFlashOn) {
+//                        cameraManager.setTorchMode(cameraId, false) // Turn off
+//                    } else if (flashCounter % 10 == 0) {
+//                        cameraManager.setTorchMode(cameraId, true)  // Turn on
+//                    }
                     flashCounter++
 
                     isFlashOn = !isFlashOn
@@ -931,11 +931,11 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     }
 
     private fun enableProximitySensor() {
-//        if (!config.disableProximitySensor && (proximityWakeLock == null || proximityWakeLock?.isHeld == false)) {
-//            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-//            proximityWakeLock = powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "org.fossify.phone:wake_lock")
-//            proximityWakeLock!!.acquire(60 * MINUTE_SECONDS * 1000L)
-//        }
+        if (!config.disableProximitySensor && (proximityWakeLock == null || proximityWakeLock?.isHeld == false)) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            proximityWakeLock = powerManager.newWakeLock(PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK, "org.fossify.phone:wake_lock")
+            proximityWakeLock!!.acquire(60 * MINUTE_SECONDS * 1000L)
+        }
     }
 
     private fun disableProximitySensor() {
