@@ -192,7 +192,7 @@ class CallActivity : SimpleActivity(), SensorEventListener {
                 //Set volume for incoming calls (just in case)
                 audioManager.setStreamVolume(
                     AudioManager.STREAM_RING,
-                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0
                 )
                 return super.dispatchKeyEvent(event)
             }
@@ -206,7 +206,7 @@ class CallActivity : SimpleActivity(), SensorEventListener {
                 // Set volume for incoming calls (just in case)
                 audioManager.setStreamVolume(
                     AudioManager.STREAM_RING,
-                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI
+                    audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0
                 )
                 return super.onKeyDown(keyCode, event)
             }
@@ -215,17 +215,17 @@ class CallActivity : SimpleActivity(), SensorEventListener {
     }
 
     override fun onBackPressed() {
-        if (binding.dialpadWrapper.isVisible()) {
-            hideDialpad()
-            return
-        } else {
-            super.onBackPressed()
-        }
-
-        val callState = CallManager.getState()
-        if (callState == Call.STATE_CONNECTING || callState == Call.STATE_DIALING) {
-            endCall()
-        }
+//        if (binding.dialpadWrapper.isVisible()) {
+//            hideDialpad()
+//            return
+//        } else {
+//            super.onBackPressed()
+//        }
+//
+//        val callState = CallManager.getState()
+//        if (callState == Call.STATE_CONNECTING || callState == Call.STATE_DIALING) {
+//            endCall()
+//        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
